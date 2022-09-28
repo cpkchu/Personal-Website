@@ -1,4 +1,19 @@
 theme: "hugo-PaperMod"
-baseURL: http://example.org/
+baseURL: http://claudia-chu.netlify.app
 languageCode: en-us
-title: My New Hugo Site
+title: Home
+
+params:
+    homeInfoParams:
+        Title: Claudia Pik-Ki Chu
+        Content: Can be Info, links, about...
+
+    socialIcons: # optional
+        - name: Github
+          url: https://github.com/cpkchu
+        - name: Twitter
+          url: https://twitter.com/Claudia__Chu
+        - name: LinkedIn
+          url: https://www.linkedin.com/in/claudia--chu/
+    
+    defaultTheme: auto

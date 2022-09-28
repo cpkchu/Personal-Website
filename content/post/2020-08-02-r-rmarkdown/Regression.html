@@ -1,0 +1,24 @@
+---
+title: 'Linear Regression Analyses'
+author: "Claudia Chu"
+date: "2022-08-02"
+categories: R
+tags:
+- Regression
+- Data Visualisation
+- R Markdown
+---
+
+
+
+<p>In this project, I will be examining some of the predictors of literacy using the world bank data.</p>
+<div id="setup" class="section level1">
+<h1>Setup</h1>
+<pre class="r"><code>library(tidyverse) # data wrangling
+library(broom) # data wrangling
+library(ggplot2) # graph plotting
+library(car) # regression
+library(lmtest) # regression</code></pre>
+<pre class="r"><code># Load file
+dataset &lt;- read.csv(&quot;Literacy.csv&quot;, header = TRUE, na.strings=c(&quot;&quot;,&quot; &quot;,&quot;NA&quot;)) </code></pre>
+</div>
