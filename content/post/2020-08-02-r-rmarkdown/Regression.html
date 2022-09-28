@@ -1,5 +1,5 @@
 ---
-title: 'Linear Regression Analyses'
+title: 'Linear Regression Analysis'
 author: "Claudia Chu"
 date: "2022-08-02"
 categories: R
@@ -11,14 +11,29 @@ tags:
 
 
 
-<p>In this project, I will be examining some of the predictors of literacy using the world bank data.</p>
+<p>In this project, I will be examining some of the predictors of countries’ total adult literacy rates using the world bank data. Multiple linear regression analyses will be conducted. The indicators of interest are: a) government expenditure on education, b) trained teachers in the primary education sector, c) pupil-teacher ratio in the primary education sector, d) fertility rate, e) GDP per capita, f) Gini index, g) research and development expenditure, h) school enrollment percentage in the primary education sector</p>
 <div id="setup" class="section level1">
 <h1>Setup</h1>
 <pre class="r"><code>library(tidyverse) # data wrangling
 library(broom) # data wrangling
 library(ggplot2) # graph plotting
 library(car) # regression
-library(lmtest) # regression</code></pre>
+library(lmtest) # regression
+library(naniar) # missing data analysis
+library(mice) # multiple imputation</code></pre>
 <pre class="r"><code># Load file
-dataset &lt;- read.csv(&quot;Literacy.csv&quot;, header = TRUE, na.strings=c(&quot;&quot;,&quot; &quot;,&quot;NA&quot;)) </code></pre>
+dataset &lt;- read.csv(&quot;Literacy.csv&quot;, header = TRUE, na.strings = c(&quot;&quot;,&quot; &quot;,&quot;NA&quot;)) 
+
+# Format the variable names
+colnames(dataset) &lt;- gsub(x = colnames(dataset), pattern = &quot;\\.&quot;, replacement = &quot;_&quot;)</code></pre>
+</div>
+<div id="data-cleaning" class="section level1">
+<h1>Data Cleaning</h1>
+<p>Before running the regression, the data has to be screened and cleaned. First of all, missing data has to be addressed. Countries with missing data on the outcome measure, i.e., the total adult literacy rates, will be excluded from subsequent analysis. Such decision was made to avoid creating any bias in drawing conclusions from the results. It could be argued that the data set will be less representative of the world population, but such trade-off is unavoidable and future improvements could be made by collecting more data.</p>
+<p>A total of 32 countries were left after applying the exclusion criteria.</p>
+<pre class="r"><code>dataset &lt;- dataset %&gt;% filter(!is.na(Literacy_Rate))
+
+
+gg_miss_upset(dataset, nsets = n_var_miss(dataset))</code></pre>
+<p><img src="/post/2020-08-02-r-rmarkdown/Regression_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
 </div>
