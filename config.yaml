@@ -7,6 +7,8 @@ params:
     homeInfoParams:
         Title: Claudia Pik-Ki Chu
         Content: I am a former psychology and education researcher who is making a transition from academia into data science. My expertise includes statistical analyses, data modelling and visualisation, as well as measurement and assessment.
+        
+                This website records the side projects that I have carried out to explore data analysis on different topics. 
 
     socialIcons: # optional
         - name: Github
