@@ -87,7 +87,7 @@ To visualise the relationships of the indicators, I produced a correlation heat 
 ```{r}
 corrplot(cor(dataset), method = 'shade', order = 'FPC', diag = FALSE, type = "lower")
 ```
-From the graph, it is shown that temperature and humidity had a strong negative correlation. 
+From the graph, it is shown that temperature and humidity had a strong negative correlation, while temperature and visibility demonstrated a moderate correlation. 
 
 # Regression
 Next, I will run the multiple linear regression analyses on the data set, with the aim to predict temperature.
