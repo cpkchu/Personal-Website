@@ -18,6 +18,7 @@ library(lubridate) # data wrangling
 library(ggplot2) # graph plotting
 library(ggloop) # graph plotting
 library(corrplot) # heat map
+library(car) # regression
 ```
 
 ```{r Load data file, message = FALSE, warning = FALSE}
