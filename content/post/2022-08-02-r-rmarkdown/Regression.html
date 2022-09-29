@@ -1,0 +1,155 @@
+---
+title: 'Regression Analysis: Weather Forecasts'
+author: "Claudia Chu"
+date: "2022-08-02"
+categories: R
+tags:
+- Regression
+- Data Visualisation
+- R Markdown
+---
+
+
+
+<p>In this project, I will be running regression analyses on the Weather in Szeged dataset (2006-2016) from Kaggle.</p>
+<div id="setup" class="section level1">
+<h1>Setup</h1>
+<pre class="r"><code>library(tidyverse) # data wrangling
+library(broom) # data wrangling
+library(lubridate) # data wrangling
+library(ggplot2) # graph plotting
+library(ggloop) # graph plotting
+library(corrplot) # heat map</code></pre>
+<pre class="r"><code># Load file
+dataset &lt;- read.csv(&quot;weatherHistory.csv&quot;, header = TRUE, na.strings = c(&quot;&quot;,&quot; &quot;,&quot;NA&quot;)) 
+
+# Format the variable names
+colnames(dataset) &lt;- gsub(x = colnames(dataset), pattern = &quot;\\.&quot;, replacement = &quot;_&quot;)</code></pre>
+<p>First, let’s take a look at the data.</p>
+<pre class="r"><code>summary(dataset)</code></pre>
+<pre><code>##  Formatted_Date       Summary          Precip_Type        Temperature__C_  
+##  Length:96453       Length:96453       Length:96453       Min.   :-21.822  
+##  Class :character   Class :character   Class :character   1st Qu.:  4.689  
+##  Mode  :character   Mode  :character   Mode  :character   Median : 12.000  
+##                                                           Mean   : 11.933  
+##                                                           3rd Qu.: 18.839  
+##                                                           Max.   : 39.906  
+##  Apparent_Temperature__C_    Humidity      Wind_Speed__km_h_
+##  Min.   :-27.717          Min.   :0.0000   Min.   : 0.000   
+##  1st Qu.:  2.311          1st Qu.:0.6000   1st Qu.: 5.828   
+##  Median : 12.000          Median :0.7800   Median : 9.966   
+##  Mean   : 10.855          Mean   :0.7349   Mean   :10.811   
+##  3rd Qu.: 18.839          3rd Qu.:0.8900   3rd Qu.:14.136   
+##  Max.   : 39.344          Max.   :1.0000   Max.   :63.853   
+##  Wind_Bearing__degrees_ Visibility__km_   Loud_Cover Pressure__millibars_
+##  Min.   :  0.0          Min.   : 0.00   Min.   :0    Min.   :   0        
+##  1st Qu.:116.0          1st Qu.: 8.34   1st Qu.:0    1st Qu.:1012        
+##  Median :180.0          Median :10.05   Median :0    Median :1016        
+##  Mean   :187.5          Mean   :10.35   Mean   :0    Mean   :1003        
+##  3rd Qu.:290.0          3rd Qu.:14.81   3rd Qu.:0    3rd Qu.:1021        
+##  Max.   :359.0          Max.   :16.10   Max.   :0    Max.   :1046        
+##  Daily_Summary     
+##  Length:96453      
+##  Class :character  
+##  Mode  :character  
+##                    
+##                    
+## </code></pre>
+<p>There is no variability in the variable “Loud Cover”, so it will be excluded in subsequent analysis. Similarly, “Formatted Date”, “Summary,”Daily Summary”, and “Precipitation Type” are not of my interest in this linear regression, so they will be excluded as well. “Temperature” and “Apparent Temperature” are of similar construct, so the latter is removed from the analysis as well.</p>
+<pre class="r"><code># Select the variables of interest
+dataset &lt;- dataset %&gt;% 
+           select(-c(&quot;Formatted_Date&quot;, &quot;Precip_Type&quot;, &quot;Apparent_Temperature__C_&quot;, &quot;Loud_Cover&quot;, &quot;Daily_Summary&quot;, &quot;Summary&quot;))
+
+# Rename the variables for better clarity
+dataset &lt;- dataset %&gt;% 
+           rename(Temperature = Temperature__C_,
+                  Wind_Speed = Wind_Speed__km_h_,
+                  Wind_Bearing = Wind_Bearing__degrees_,
+                  Visibility = Visibility__km_,
+                  Pressure = Pressure__millibars_)</code></pre>
+<p>Now that I have selected the variables from the data set, I can start screening the data.</p>
+<p>First, let’s check for missing data.</p>
+<pre class="r"><code>sum(is.na(dataset))</code></pre>
+<pre><code>## [1] 0</code></pre>
+<p>The data set does not consist any missing values.</p>
+<p>Next, let’s look at outliers for the variables at interval and ratio levels. This can be done using box plots.</p>
+<pre class="r"><code>ggplot2::theme_set(ggplot2::theme_light())  ## Globally sets the ggplot2 theme
+
+boxplots &lt;- ggloop(data = dataset, 
+                mappings = aes_loop(x = &quot;&quot;, y = Temperature:Pressure))
+
+boxplots[1:6] &lt;- boxplots[1:6] %L+% geom_boxplot(colour = &quot;grey35&quot;, fill = &quot;steelblue&quot;)</code></pre>
+<pre><code>## Warning in boxplots[1:6] %L+% geom_boxplot(colour = &quot;grey35&quot;, fill =
+## &quot;steelblue&quot;): The special infix operator `%L+%` will be deprecated. Please use
+## `+` as you would for &#39;ggplot2&#39;.</code></pre>
+<pre class="r"><code>boxplots[1:6]</code></pre>
+<pre><code>## $y.Temperature</code></pre>
+<p><img src="/post/2022-08-02-r-rmarkdown/Regression_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<pre><code>## 
+## $y.Humidity</code></pre>
+<p><img src="/post/2022-08-02-r-rmarkdown/Regression_files/figure-html/unnamed-chunk-4-2.png" width="672" /></p>
+<pre><code>## 
+## $y.Wind_Speed</code></pre>
+<p><img src="/post/2022-08-02-r-rmarkdown/Regression_files/figure-html/unnamed-chunk-4-3.png" width="672" /></p>
+<pre><code>## 
+## $y.Wind_Bearing</code></pre>
+<p><img src="/post/2022-08-02-r-rmarkdown/Regression_files/figure-html/unnamed-chunk-4-4.png" width="672" /></p>
+<pre><code>## 
+## $y.Visibility</code></pre>
+<p><img src="/post/2022-08-02-r-rmarkdown/Regression_files/figure-html/unnamed-chunk-4-5.png" width="672" /></p>
+<pre><code>## 
+## $y.Pressure</code></pre>
+<p><img src="/post/2022-08-02-r-rmarkdown/Regression_files/figure-html/unnamed-chunk-4-6.png" width="672" /></p>
+<pre><code>## 
+## attr(,&quot;class&quot;)
+## [1] &quot;gglist&quot;</code></pre>
+<p>Removing outliers is not ideal, so outliers in this data set will be replaced with the 5th and 95th percentiles respectively.</p>
+<pre class="r"><code>replace_quantile &lt;- function(x){
+    quantiles &lt;- quantile( x, c(.05, .95 ) )
+    x[ x &lt; quantiles[1] ] &lt;- quantiles[1]
+    x[ x &gt; quantiles[2] ] &lt;- quantiles[2]
+    x
+}
+
+dataset$Temperature &lt;- replace_quantile(dataset$Temperature)
+dataset$Humidity &lt;- replace_quantile(dataset$Humidity)
+dataset$Pressure &lt;- replace_quantile(dataset$Pressure)
+dataset$Wind_Bearing &lt;- replace_quantile(dataset$Wind_Bearing)</code></pre>
+</div>
+<div id="correlation-heatmap" class="section level1">
+<h1>Correlation Heatmap</h1>
+<p>To visualise the relationships of the indicators, I produced a correlation heat map.</p>
+<pre class="r"><code>corrplot(cor(dataset), method = &#39;shade&#39;, order = &#39;FPC&#39;, diag = FALSE, type = &quot;lower&quot;)</code></pre>
+<p><img src="/post/2022-08-02-r-rmarkdown/Regression_files/figure-html/unnamed-chunk-6-1.png" width="672" />
+From the graph, it is shown that temperature and humidity had a strong negative correlation.</p>
+</div>
+<div id="regression" class="section level1">
+<h1>Regression</h1>
+<p>Next, I will run the multiple linear regression analyses on the data set, with the aim to predict temperature.</p>
+<pre class="r"><code>Model &lt;- lm(Temperature ~ Pressure + Humidity + Visibility + Wind_Bearing + Wind_Speed, dataset)
+summary(Model)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = Temperature ~ Pressure + Humidity + Visibility + 
+##     Wind_Bearing + Wind_Speed, data = dataset)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -28.8486  -4.1378   0.4049   4.4616  20.8349 
+## 
+## Coefficients:
+##                Estimate Std. Error  t value Pr(&gt;|t|)    
+## (Intercept)  430.285957   2.981633  144.312   &lt;2e-16 ***
+## Pressure      -0.390638   0.002909 -134.286   &lt;2e-16 ***
+## Humidity     -29.344642   0.114669 -255.907   &lt;2e-16 ***
+## Visibility     0.312942   0.005076   61.648   &lt;2e-16 ***
+## Wind_Bearing   0.001735   0.000186    9.327   &lt;2e-16 ***
+## Wind_Speed    -0.296319   0.003006  -98.583   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 6.076 on 96447 degrees of freedom
+## Multiple R-squared:  0.5391, Adjusted R-squared:  0.5391 
+## F-statistic: 2.256e+04 on 5 and 96447 DF,  p-value: &lt; 2.2e-16</code></pre>
+<p>Results showed that pressure, humidity, visibility, wind bearing and wind speed all significantly predicted temperature. The model explained 54% of the variances.</p>
+</div>

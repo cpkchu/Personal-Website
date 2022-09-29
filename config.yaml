@@ -6,7 +6,7 @@ title: Home
 params:
     homeInfoParams:
         Title: Claudia Pik-Ki Chu
-        Content: Can be Info, links, about...
+        Content: I am a former psychology and education researcher who is making a transition from academia into data science. My expertise includes statistical analyses, data modelling and visualisation, as well as measurement and assessment.
 
     socialIcons: # optional
         - name: Github
@@ -17,3 +17,4 @@ params:
           url: https://www.linkedin.com/in/claudia--chu/
     
     defaultTheme: auto
+

@@ -1,0 +1,143 @@
+---
+title: 'Text Mining and Sentiment Analysis: Product Reviews'
+author: "Claudia Chu"
+date: "2022-08-30"
+categories: R
+tags:
+- Sentiment Analysis
+- Text Mining
+- Data Visualisation
+- R Markdown
+---
+In this project, I will be running a sentiment analysis on product reviews using the Multi-Domain Sentiment Dataset compiled by the John Hopkins University (Blitzer et al., 2007; https://www.cs.jhu.edu/~mdredze/datasets/sentiment/). Specifically, I will focus on the outdoor living category.
+
+# Setup
+```{r Load packages, message = FALSE, warning = FALSE}
+library(tidyverse) # data wrangling
+library(tm) # text mining 
+library(wordcloud2) # word cloud
+library(tidytext) # additional text mining features and sentiment analysis
+library(ggplot2) # graph plotting
+```
+
+```{r Load data file, message = FALSE, warning = FALSE}
+# Load file
+text <- readLines("ProductReview")
+text <- iconv(text, "ASCII", "UTF-8", sub="byte")
+
+# Create a corpus
+text_data <- Corpus(VectorSource(text))
+```
+
+# Cleaning the Text Data
+Before running any analysis, the text has to be cleaned and processed. 
+```{r, message = FALSE, warning = FALSE}
+# Replace any upper case with lower case
+text_data <- tm_map(text_data, content_transformer(tolower))
+
+# Reduce words to their root form
+text_data <- tm_map(text_data, stemDocument)
+
+# Remove common English stopwords
+text_data <- tm_map(text_data, removeWords, stopwords("english"))
+
+# Remove stop word specific to the dataset
+text_data <- tm_map(text_data, removeWords, c("review", "unique_id", "asin", 
+                                              "product_name", "product_type", 
+                                              "helpful", "rating", "title", 
+                                              "date", "reviewer", "review_text", 
+                                              "reviewer_location")) 
+
+# Remove numbers
+text_data<- tm_map(text_data, removeNumbers)
+
+# Remove punctuation
+text_data <- tm_map(text_data, removePunctuation)
+
+# Remove extra white spaces
+text_data <- tm_map(text_data, stripWhitespace)
+
+# Remove special characters by converting them to space
+space <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+text_data <- tm_map(text_data, space, "@")
+text_data <- tm_map(text_data, space, "/")
+text_data <- tm_map(text_data, space, "_")
+```
+
+# Create the Term Document Matrix 
+The term document matrix contains the frequency of the words.
+```{r}
+text_tdm <- TermDocumentMatrix(text_data)
+text_tdm <- as.matrix(text_tdm)
+```
+
+I can then identify the top 5 most frequent words...
+```{r, message = FALSE, warning = FALSE}
+# Sort the matrix by descending word frequencies
+text_tdm_value <- sort(rowSums(text_tdm), decreasing = TRUE)
+text_tdm_sorted <- data.frame(word = names(text_tdm_value), freq = text_tdm_value)
+
+# Display the top 5 most frequent words
+head(text_tdm_sorted, 5)
+```
+
+...or visualise the word frequencies using a word cloud. 
+```{r, message = FALSE, warning = FALSE}
+# Create word cloud
+set.seed(1234) # for reproducibility
+wordcloud2(text_tdm_sorted, color = "random-dark")
+```
+
+# Preparing the Data for Sentiment Analysis
+Next, I will prepare the data for sentiment analysis using the tidytext package. I will be using the NRC Word-Emotion Association Lexicon in this project. Other options like the AFINN lexicon may produce slightly diferent results. 
+```{r, message = FALSE, warning = FALSE}
+text_corpus <- data.frame(text = get("content", text_data))
+
+text_df <- text_corpus %>%
+  unnest_tokens(word, text)
+
+# Call for the nrc lexicon
+nrc <- get_sentiments("nrc")
+```
+
+With the data ready, sentiment analysis can then be carried out. First of all, I will identify the top ten sentiments from the reviews. 
+```{r, message = FALSE, warning = FALSE}
+top_ten <- text_df %>%
+        right_join(nrc, by = "word") %>%
+        filter(!is.na(sentiment)) %>%
+        count(sentiment, sort = TRUE)
+
+bar_plot <- ggplot(top_ten, aes(x = reorder(sentiment, desc(n)), y = n)) + 
+            geom_bar(stat = "identity", fill="steelblue") + theme_light() + 
+            labs(x = "sentiment", y = "count") + 
+            ggtitle("Product Review Sentiments") + ggthemes::theme_hc()
+
+bar_plot
+```
+The bar charts show that there are more positive emotions compared to negative ones. Trust, anticipation, and joy are among the top positive emotions identified. It can then be inferred that customers were generally feeling positive about their purchase of the outdoor living items on Amazon. 
+
+Next, I want to visualise the words contributing to each sentiment category. 
+
+```{r, message = FALSE, warning = FALSE}
+common_sentiment_word <- text_df %>%
+  group_by() %>% 
+  inner_join(nrc, by = "word") %>% 
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+contribution <- common_sentiment_word %>%
+        group_by(sentiment) %>%
+        top_n(8) %>%
+        ggplot(aes(reorder(word, n), n, fill = sentiment)) +
+          geom_bar(alpha = 0.8, stat = "identity", show.legend = FALSE) +
+          facet_wrap(~sentiment, scales = "free_y") +
+          labs(y = "contribution to sentiment", x = NULL) +
+          coord_flip()
+contribution
+```
+The results are certainly interesting. The word "good" was associated with several core emotions, some are expected (like joy and trust) and other not as much but in a good way (i.e., a pleasant surprise). The core emotion of disgust warrants further reflection as the some of the words contributing to the category could be neutral words commonly used when talking about outdoor living related matter, such as mosquito and pest. 
+
+This concludes the sentiment analysis project on Amazon product reviews. 
+
+
+

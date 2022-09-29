@@ -1,0 +1,97 @@
+---
+title: 'Regression Analysis: Weather Forecasts'
+author: "Claudia Chu"
+date: "2022-08-02"
+categories: R
+tags:
+- Regression
+- Data Visualisation
+- R Markdown
+---
+In this project, I will be running regression analyses on the Weather in Szeged dataset (2006-2016) from Kaggle. 
+
+# Setup
+```{r Load packages, message = FALSE, warning = FALSE}
+library(tidyverse) # data wrangling
+library(broom) # data wrangling
+library(lubridate) # data wrangling
+library(ggplot2) # graph plotting
+library(ggloop) # graph plotting
+library(corrplot) # heat map
+```
+
+```{r Load data file, message = FALSE, warning = FALSE}
+# Load file
+dataset <- read.csv("weatherHistory.csv", header = TRUE, na.strings = c(""," ","NA")) 
+
+# Format the variable names
+colnames(dataset) <- gsub(x = colnames(dataset), pattern = "\\.", replacement = "_")
+```
+
+First, let's take a look at the data. 
+```{r}
+summary(dataset)
+```
+There is no variability in the variable "Loud Cover", so it will be excluded in subsequent analysis. Similarly, "Formatted Date", "Summary, "Daily Summary", and "Precipitation Type" are not of my interest in this linear regression, so they will be excluded as well. "Temperature" and "Apparent Temperature" are of similar construct, so the latter is removed from the analysis as well.
+
+```{r}
+# Select the variables of interest
+dataset <- dataset %>% 
+           select(-c("Formatted_Date", "Precip_Type", "Apparent_Temperature__C_", "Loud_Cover", "Daily_Summary", "Summary"))
+
+# Rename the variables for better clarity
+dataset <- dataset %>% 
+           rename(Temperature = Temperature__C_,
+                  Wind_Speed = Wind_Speed__km_h_,
+                  Wind_Bearing = Wind_Bearing__degrees_,
+                  Visibility = Visibility__km_,
+                  Pressure = Pressure__millibars_)
+```
+Now that I have selected the variables from the data set, I can start screening the data. 
+
+First, let's check for missing data.
+```{r}
+sum(is.na(dataset))
+```
+The data set does not consist any missing values. 
+
+Next, let's look at outliers for the variables at interval and ratio levels. This can be done using box plots. 
+```{r}
+ggplot2::theme_set(ggplot2::theme_light())  ## Globally sets the ggplot2 theme
+
+boxplots <- ggloop(data = dataset, 
+                mappings = aes_loop(x = "", y = Temperature:Pressure))
+
+boxplots[1:6] <- boxplots[1:6] %L+% geom_boxplot(colour = "grey35", fill = "steelblue")
+boxplots[1:6]
+```
+
+Removing outliers is not ideal, so outliers in this data set will be replaced with the 5th and 95th percentiles respectively. 
+```{r}
+replace_quantile <- function(x){
+    quantiles <- quantile( x, c(.05, .95 ) )
+    x[ x < quantiles[1] ] <- quantiles[1]
+    x[ x > quantiles[2] ] <- quantiles[2]
+    x
+}
+
+dataset$Temperature <- replace_quantile(dataset$Temperature)
+dataset$Humidity <- replace_quantile(dataset$Humidity)
+dataset$Pressure <- replace_quantile(dataset$Pressure)
+dataset$Wind_Bearing <- replace_quantile(dataset$Wind_Bearing)
+```
+
+# Correlation Heatmap
+To visualise the relationships of the indicators, I produced a correlation heat map. 
+```{r}
+corrplot(cor(dataset), method = 'shade', order = 'FPC', diag = FALSE, type = "lower")
+```
+From the graph, it is shown that temperature and humidity had a strong negative correlation. 
+
+# Regression
+Next, I will run the multiple linear regression analyses on the data set, with the aim to predict temperature.
+```{r}
+Model <- lm(Temperature ~ Pressure + Humidity + Visibility + Wind_Bearing + Wind_Speed, dataset)
+summary(Model)
+```
+Results showed that pressure, humidity, visibility, wind bearing and wind speed all significantly predicted temperature. The model explained 54% of the variances. 
