@@ -19,7 +19,8 @@ library(broom) # data wrangling
 library(lubridate) # data wrangling
 library(ggplot2) # graph plotting
 library(ggloop) # graph plotting
-library(corrplot) # heat map</code></pre>
+library(corrplot) # heat map
+library(car) # regression</code></pre>
 <pre class="r"><code># Load file
 dataset &lt;- read.csv(&quot;weatherHistory.csv&quot;, header = TRUE, na.strings = c(&quot;&quot;,&quot; &quot;,&quot;NA&quot;)) 
 
@@ -121,7 +122,7 @@ dataset$Wind_Bearing &lt;- replace_quantile(dataset$Wind_Bearing)</code></pre>
 <p>To visualise the relationships of the indicators, I produced a correlation heat map.</p>
 <pre class="r"><code>corrplot(cor(dataset), method = &#39;shade&#39;, order = &#39;FPC&#39;, diag = FALSE, type = &quot;lower&quot;)</code></pre>
 <p><img src="/post/2022-08-02-r-rmarkdown/Regression_files/figure-html/unnamed-chunk-6-1.png" width="672" />
-From the graph, it is shown that temperature and humidity had a strong negative correlation.</p>
+From the graph, it is shown that temperature and humidity had a strong negative correlation, while temperature and visibility demonstrated a moderate correlation.</p>
 </div>
 <div id="regression" class="section level1">
 <h1>Regression</h1>
